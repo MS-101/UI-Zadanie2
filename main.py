@@ -448,7 +448,7 @@ def read_state_from_file(file_name):
 startingState = None
 
 while True:
-    fileName = input("Zadajte názov vstupného súboru: ")
+    fileName = input("Zadajte názov vstupného súboru (aj s príponou): ")
 
     try:
         startingState = read_state_from_file(fileName)

@@ -1,0 +1,7 @@
+6 6
+cervene 2 5 1 h
+oranzove 2 2 5 h
+fialove 3 2 2 v
+modre 3 4 3 h
+zelene 2 5 3 v
+zlte 2 5 5 v
