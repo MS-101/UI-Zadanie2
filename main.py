@@ -1,8 +1,8 @@
 import copy
+import time
 
-
-columns = 6
-rows = 6
+rows: int
+columns: int
 
 
 class Car:
@@ -15,10 +15,11 @@ class Car:
 
 
 class StateNode:
-    def __init__(self, state, instruction, prev):
+    def __init__(self, state, instruction, prev, cost):
         self.state = state
         self.instruction = instruction
         self.prev = prev
+        self.cost = cost
 
 
 class Instruction:
@@ -64,8 +65,6 @@ def find_car_by_color(state, color):
 
 
 def is_state_final(red_car):
-    # print("checking final state: pos x = " + str(red_car.pos_x))
-
     if red_car.pos_x + red_car.size == columns + 1:
         return True
     else:
@@ -110,81 +109,112 @@ def state_in_node_arr(state, node_arr):
     return False
 
 
-def move_forward(prev_node, moving_car):
-    prev_crossroad = create_crossroad(prev_node.state)
+def move(direction, state, moving_car):
+    crossroad = create_crossroad(state)
 
-    if moving_car.is_horizontal is True:
+    if direction == "VPRAVO" and moving_car.is_horizontal is True:
         # move right
         if moving_car.pos_x + moving_car.size <= columns \
-                and prev_crossroad[moving_car.pos_y - 1][moving_car.pos_x - 1 + moving_car.size - 1 + 1] is None:
-            moving_car_index = prev_node.state.index(moving_car)
-            new_state = copy.deepcopy(prev_node.state)
+                and crossroad[moving_car.pos_y - 1][moving_car.pos_x - 1 + moving_car.size - 1 + 1] is None:
+            moving_car_index = state.index(moving_car)
 
+            new_state = copy.deepcopy(state)
             new_state[moving_car_index].pos_x += 1
 
-            new_instruction = Instruction("VPRAVO", moving_car.color, 1)
-
-            new_node = StateNode(new_state, new_instruction, prev_node)
-
-            return new_node
-    else:
-        # move down
-        if moving_car.pos_y + moving_car.size <= rows \
-                and prev_crossroad[moving_car.pos_y - 1 + moving_car.size - 1 + 1][moving_car.pos_x - 1] is None:
-            moving_car_index = prev_node.state.index(moving_car)
-            new_state = copy.deepcopy(prev_node.state)
-
-            new_state[moving_car_index].pos_y += 1
-
-            new_instruction = Instruction("DOLE", moving_car.color, 1)
-
-            new_node = StateNode(new_state, new_instruction, prev_node)
-
-            return new_node
-
-    return None
-
-
-def move_backward(prev_node, moving_car):
-    prev_crossroad = create_crossroad(prev_node.state)
-
-    if moving_car.is_horizontal is True:
+            return new_state
+    elif direction == "VLAVO" and moving_car.is_horizontal is True:
         # move left
-        if moving_car.pos_x > 1 and prev_crossroad[moving_car.pos_y - 1][moving_car.pos_x - 1 - 1] is None:
-            moving_car_index = prev_node.state.index(moving_car)
-            new_state = copy.deepcopy(prev_node.state)
+        if moving_car.pos_x > 1 and crossroad[moving_car.pos_y - 1][moving_car.pos_x - 1 - 1] is None:
+            moving_car_index = state.index(moving_car)
 
+            new_state = copy.deepcopy(state)
             new_state[moving_car_index].pos_x -= 1
 
-            new_instruction = Instruction("VLAVO", moving_car.color, 1)
+            return new_state
+    elif direction == "DOLE" and moving_car.is_horizontal is False:
+        # move down
+        if moving_car.pos_y + moving_car.size <= rows \
+                and crossroad[moving_car.pos_y - 1 + moving_car.size - 1 + 1][moving_car.pos_x - 1] is None:
+            moving_car_index = state.index(moving_car)
 
-            new_node = StateNode(new_state, new_instruction, prev_node)
+            new_state = copy.deepcopy(state)
+            new_state[moving_car_index].pos_y += 1
 
-            return new_node
-    else:
+            return new_state
+    elif direction == "HORE" and moving_car.is_horizontal is False:
         # move up
-        if moving_car.pos_y > 1 and prev_crossroad[moving_car.pos_y - 1 - 1][moving_car.pos_x - 1] is None:
-            moving_car_index = prev_node.state.index(moving_car)
-            new_state = copy.deepcopy(prev_node.state)
+        if moving_car.pos_y > 1 and crossroad[moving_car.pos_y - 1 - 1][moving_car.pos_x - 1] is None:
+            moving_car_index = state.index(moving_car)
 
+            new_state = copy.deepcopy(state)
             new_state[moving_car_index].pos_y -= 1
 
-            new_instruction = Instruction("HORE", moving_car.color, 1)
-
-            new_node = StateNode(new_state, new_instruction, prev_node)
-
-            return new_node
+            return new_state
 
     return None
 
 
-def get_path_bfs(starting_state, red_car):
+def move_forward(node, moving_car):
+    if moving_car.is_horizontal is True:
+        # move right
+        new_state = move("VPRAVO", node.state, moving_car)
+
+        if new_state is None:
+            return None
+
+        new_instruction = Instruction("VPRAVO", moving_car.color, 1)
+
+        new_node = StateNode(new_state, new_instruction, node, node.cost + 1)
+
+        return new_node
+    else:
+        # move down
+        new_state = move("DOLE", node.state, moving_car)
+
+        if new_state is None:
+            return None
+
+        new_instruction = Instruction("DOLE", moving_car.color, 1)
+
+        new_node = StateNode(new_state, new_instruction, node, node.cost + 1)
+
+        return new_node
+
+
+def move_backward(node, moving_car):
+    if moving_car.is_horizontal is True:
+        # move left
+        new_state = move("VLAVO", node.state, moving_car)
+
+        if new_state is None:
+            return None
+
+        new_instruction = Instruction("VLAVO", moving_car.color, 1)
+
+        new_node = StateNode(new_state, new_instruction, node, node.cost + 1)
+
+        return new_node
+    else:
+        # move up
+        new_state = move("HORE", node.state, moving_car)
+
+        if new_state is None:
+            return None
+
+        new_instruction = Instruction("HORE", moving_car.color, 1)
+
+        new_node = StateNode(new_state, new_instruction, node, node.cost + 1)
+
+        return new_node
+
+
+def get_path_bfs(starting_state):
     visited_nodes = []
     explored_nodes = []
 
     # create first node and add its state to visited states
-    first_state_node = StateNode(starting_state, None, None)
-    visited_nodes.append(first_state_node)
+    first_node = StateNode(starting_state, None, None, 0)
+    visited_nodes.append(first_node)
 
     while True:
         # check if there is any visited, unexplored node
@@ -203,18 +233,106 @@ def get_path_bfs(starting_state, red_car):
         # explore node
         for picked_car in cur_node.state:
             # move picked car forward
-            new_state_node = move_forward(cur_node, picked_car)
+            new_node = move_forward(cur_node, picked_car)
 
-            if new_state_node is not None and state_in_node_arr(new_state_node.state, visited_nodes) is not True \
-                    and state_in_node_arr(new_state_node.state, explored_nodes) is not True:
-                visited_nodes.append(new_state_node)
+            if new_node is not None and state_in_node_arr(new_node.state, visited_nodes) is not True \
+                    and state_in_node_arr(new_node.state, explored_nodes) is not True:
+                visited_nodes.append(new_node)
 
             # move picked car backward
-            new_state_node = move_backward(cur_node, picked_car)
+            new_node = move_backward(cur_node, picked_car)
 
-            if new_state_node is not None and state_in_node_arr(new_state_node.state, visited_nodes) is not True \
-                    and state_in_node_arr(new_state_node.state, explored_nodes) is not True:
-                visited_nodes.append(new_state_node)
+            if new_node is not None and state_in_node_arr(new_node.state, visited_nodes) is not True \
+                    and state_in_node_arr(new_node.state, explored_nodes) is not True:
+                visited_nodes.append(new_node)
+
+        # move current node from visited to explored nodes array
+        visited_nodes.remove(cur_node)
+        explored_nodes.append(cur_node)
+
+
+def explore_node_dfs(cur_node, visited_nodes, explored_nodes):
+    cur_red_car = find_car_by_color(cur_node.state, "cervene")
+
+    if is_state_final(cur_red_car) is True:
+        return cur_node
+
+    # explore node
+    for picked_car in cur_node.state:
+        # move picked car forward
+        new_node = move_forward(cur_node, picked_car)
+
+        if new_node is not None and state_in_node_arr(new_node.state, visited_nodes) is not True \
+                and state_in_node_arr(new_node.state, explored_nodes) is not True:
+            visited_nodes.insert(0, new_node)
+            final_node = explore_node_dfs(new_node, visited_nodes, explored_nodes)
+
+            if final_node is not None:
+                return final_node
+
+        # move picked car backward
+        new_node = move_backward(cur_node, picked_car)
+
+        if new_node is not None and state_in_node_arr(new_node.state, visited_nodes) is not True \
+                and state_in_node_arr(new_node.state, explored_nodes) is not True:
+            visited_nodes.insert(0, new_node)
+            final_node = explore_node_dfs(new_node, visited_nodes, explored_nodes)
+
+            if final_node is not None:
+                return final_node
+
+    # move current node from visited to explored nodes array
+    visited_nodes.remove(cur_node)
+    explored_nodes.append(cur_node)
+
+    return None
+
+
+def get_path_dfs(starting_state):
+    visited_nodes = []
+    explored_nodes = []
+
+    # create first node and add its state to visited states
+    first_node = StateNode(starting_state, None, None, 0)
+    visited_nodes.append(first_node)
+
+    while True:
+        # check if there is any visited, unexplored node
+        if len(visited_nodes) == 0:
+            return None
+
+        # pick visited node
+        cur_node = visited_nodes[0]
+
+        # if its state is final return this node
+        cur_red_car = find_car_by_color(cur_node.state, "cervene")
+
+        if is_state_final(cur_red_car) is True:
+            return cur_node
+
+        # explore node
+        for picked_car in cur_node.state:
+            # move picked car forward
+            new_node = move_forward(cur_node, picked_car)
+
+            if new_node is not None and state_in_node_arr(new_node.state, visited_nodes) is not True \
+                    and state_in_node_arr(new_node.state, explored_nodes) is not True:
+                visited_nodes.insert(0, new_node)
+                final_node = explore_node_dfs(new_node, visited_nodes, explored_nodes)
+
+                if final_node is not None:
+                    return final_node
+
+            # move picked car backward
+            new_node = move_backward(cur_node, picked_car)
+
+            if new_node is not None and state_in_node_arr(new_node.state, visited_nodes) is not True \
+                    and state_in_node_arr(new_node.state, explored_nodes) is not True:
+                visited_nodes.insert(0, new_node)
+                final_node = explore_node_dfs(new_node, visited_nodes, explored_nodes)
+
+                if final_node is not None:
+                    return final_node
 
         # move current node from visited to explored nodes array
         visited_nodes.remove(cur_node)
@@ -252,7 +370,6 @@ def print_path_instructions(final_path_node):
 
         instruction_index += 1
 
-
     # print all instructions in order
     for picked_instruction in instructions:
         print(picked_instruction.direction + "(" + picked_instruction.color + ", "
@@ -261,26 +378,121 @@ def print_path_instructions(final_path_node):
 
 def print_state(state):
     for picked_car in state:
-        print(picked_car.color + "[" + str(picked_car.pos_y) + ", " + str(picked_car.pos_x) + "]")
+        if picked_car.is_horizontal is True:
+            horizontal_char = "h"
+        else:
+            horizontal_char = "v"
+
+        print(picked_car.color + " " + str(picked_car.size) + " " + str(picked_car.pos_y) + " " + str(picked_car.pos_x)
+              + " " + horizontal_char)
 
 
-car1 = Car("cervene", 2, 3, 2, True)
-car2 = Car("oranzove", 2, 1, 1, True)
-car3 = Car("zlte", 3, 2, 1, False)
-car4 = Car("fialove", 2, 5, 1, False)
-car5 = Car("zelene", 3, 2, 4, False)
-car6 = Car("svetlomodre", 3, 6, 3, True)
-car7 = Car("sive", 2, 5, 5, True)
-car8 = Car("tmavomodre", 3, 1, 6, False)
+def is_state_legal(state):
+    for picked_car in state:
+        if picked_car.is_horizontal is True:
+            if picked_car.pos_y < 1 or picked_car.pos_y > rows:
+                return False
 
-starting_state = [car1, car2, car3, car4, car5, car6, car7, car8]
+            if picked_car.pos_x < 1 or picked_car.pos_x + picked_car.size - 1 > columns:
+                return False
+        else:
+            if picked_car.pos_y < 1 or picked_car.pos_y + picked_car.size - 1 > rows:
+                return False
 
-red_car = find_car_by_color(starting_state, "cervene")
+            if picked_car.pos_x < 1 or picked_car.pos_x > columns:
+                return False
 
-if red_car is not None:
-    final_path_node = get_path_bfs(starting_state, red_car)
+    return True
 
-    if final_path_node is not None:
-        print_path_instructions(final_path_node)
+
+def read_state_from_file(file_name):
+    input_file = open("Input/" + file_name, "r")
+
+    state = []
+
+    is_first_line = True
+    for line in input_file:
+        words = line.split()
+
+        if is_first_line is True:
+            global rows
+            rows = int(words[0])
+
+            global columns
+            columns = int(words[1])
+
+            is_first_line = False
+            continue
+
+        color = words[0]
+        size = int(words[1])
+        pos_y = int(words[2])
+        pos_x = int(words[3])
+        if words[4] == "h":
+            is_horizontal = True
+        else:
+            is_horizontal = False
+
+        new_car = Car(color, size, pos_y, pos_x, is_horizontal)
+
+        state.append(new_car)
+
+    input_file.close()
+
+    if is_state_legal(state) is True:
+        return state
     else:
-        print("no path was found")
+        return None
+
+
+startingState = None
+
+while True:
+    fileName = input("Zadajte názov vstupného súboru: ")
+
+    try:
+        startingState = read_state_from_file(fileName)
+
+        if startingState is None:
+            print("Vstupný súbor je nesprávne sformátovaný.")
+            continue
+        else:
+            break
+    except IOError:
+        print("Zadaný súbor neexistuje.")
+        continue
+
+while True:
+    algorithm = input("Zadajte názov algoritmu: ")
+
+    if algorithm == "bfs" or algorithm == "dfs":
+        break
+    else:
+        print("Zadali ste nesprávny názov algoritmu.")
+        continue
+
+print()
+
+start = time.time()
+
+finalPathNode = None
+if algorithm == "bfs":
+    finalPathNode = get_path_bfs(startingState)
+elif algorithm == "dfs":
+    finalPathNode = get_path_dfs(startingState)
+
+if finalPathNode is not None:
+    print("Riešenie:")
+    print_path_instructions(finalPathNode)
+    print()
+
+    print("Cena cesty: " + str(finalPathNode.cost))
+else:
+    print("Riešenie nebolo nájdené!")
+    print()
+
+end = time.time()
+
+elapsedTime = end - start
+
+print("Výpočet trval " + str(elapsedTime) + " sekúnd.")
