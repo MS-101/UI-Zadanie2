@@ -1,3 +1,5 @@
+Vstupné súbory sa nachádzajú v adresári Input. Nachádza sa tam 5 testovacích príkladov (z toho 3. nemá riešenie).
+
 Formát vstupného súboru:
 ========================
 Prvý riadok: počet_riadkov počet_stĺpcov

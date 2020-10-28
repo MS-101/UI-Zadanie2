@@ -1,0 +1,5 @@
+4 4
+cervene 2 4 1 h
+oranzove 3 2 3 v
+zlte 2 3 4 v
+zelene 2 1 3 h
